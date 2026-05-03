@@ -78,6 +78,7 @@ export const metadata: Metadata = {
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { getDb } from '@/lib/neon';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -97,7 +98,18 @@ const jsonLd = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  let logoUrl = '';
+  try {
+    const sql = getDb() as any;
+    const res = await sql`SELECT value FROM settings WHERE key = 'logoUrl' LIMIT 1`;
+    if (res && res.length > 0) {
+      logoUrl = res[0].value;
+    }
+  } catch (e) {
+    console.error('Failed to load settings', e);
+  }
+
   return (
     <html lang="tr" className={`${inter.variable} ${outfit.variable} scroll-smooth`}>
       <head>
@@ -107,7 +119,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="antialiased font-sans text-white bg-background min-h-screen flex flex-col" suppressHydrationWarning>
-        <Header />
+        <Header logoUrl={logoUrl} />
         {children}
         <Footer />
       </body>

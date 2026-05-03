@@ -18,7 +18,7 @@ const NavLinks = [
   { name: 'İletişim', href: '/iletisim' },
 ];
 
-export function Header() {
+export function Header({ logoUrl }: { logoUrl?: string }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -37,7 +37,7 @@ export function Header() {
       }`}
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
-        <Logo />
+        <Logo logoUrl={logoUrl} />
 
         {/* Desktop Nav */}
         <nav className="hidden lg:flex items-center gap-8">

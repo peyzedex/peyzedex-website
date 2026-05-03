@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/Button';
-import { Plus, Trash2, LogIn, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, LogIn, Loader2, AlertCircle, Check } from 'lucide-react';
 import { useProjects } from '@/lib/useProjects';
 import { useDemos } from '@/lib/useDemos';
 
@@ -12,7 +12,7 @@ export function AdminPanel() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   
-  const [activeTab, setActiveTab] = useState<'projects' | 'demos'>('projects');
+  const [activeTab, setActiveTab] = useState<'projects' | 'demos' | 'settings'>('projects');
   
   const { projects, loading: projectsLoading, refetch: refetchProjects } = useProjects();
   const { demos, loading: demosLoading, refetch: refetchDemos } = useDemos();
@@ -26,8 +26,53 @@ export function AdminPanel() {
     isFeatured: true
   });
   
+  const [settingsFormData, setSettingsFormData] = useState({
+    logoUrl: ''
+  });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  // Fetch settings when entering settings tab
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      fetch('/api/settings')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.logoUrl) {
+            setSettingsFormData({ logoUrl: data.logoUrl });
+          }
+        })
+        .catch(err => console.error('Failed to fetch settings', err));
+    }
+  }, [activeTab]);
+
+  const handleSettingsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+    setIsSubmitting(true);
+    
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'logoUrl', value: settingsFormData.logoUrl })
+      });
+      
+      if (!res.ok) {
+        throw new Error((await res.json())?.error || 'Bir hata oluştu');
+      }
+      
+      setSuccessMsg('Ayarlar başarıyla güncellendi.');
+      // Optionally trigger a reload or context update here if the logo is cached
+    } catch (error: any) {
+      setErrorMsg('Ayarlar güncellenemedi. ' + (error.message || 'Bir hata oluştu'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +93,7 @@ export function AdminPanel() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    setSuccessMsg('');
     setIsSubmitting(true);
     
     try {
@@ -177,6 +223,12 @@ export function AdminPanel() {
         >
           Demolar
         </button>
+        <button 
+          onClick={() => setActiveTab('settings')}
+          className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'settings' ? 'bg-primary text-white' : 'text-muted hover:bg-white/5'}`}
+        >
+          Ayarlar
+        </button>
       </div>
       
       {errorMsg && (
@@ -186,6 +238,48 @@ export function AdminPanel() {
         </div>
       )}
 
+      {successMsg && (
+        <div className="mb-8 p-4 bg-emerald-500/10 border border-emerald-500/50 rounded-xl flex items-center gap-2 text-emerald-400">
+          <Check size={20} />
+          <p className="text-sm">{successMsg}</p>
+        </div>
+      )}
+
+      {activeTab === 'settings' ? (
+        <div className="max-w-2xl">
+          <h2 className="text-xl font-bold mb-6">Site Ayarları</h2>
+          <form onSubmit={handleSettingsSubmit} className="space-y-6">
+            <div className="glass-panel p-6 rounded-2xl">
+              <h3 className="font-bold mb-4 border-b border-card-border pb-4">Logo Ayarları</h3>
+              <div>
+                <label className="text-sm text-gray-300 mb-2 block">Logo URL</label>
+                <input 
+                  type="url" 
+                  value={settingsFormData.logoUrl} 
+                  onChange={e => setSettingsFormData({...settingsFormData, logoUrl: e.target.value})} 
+                  className="w-full bg-white/5 border border-card-border rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50" 
+                  placeholder="https://..." 
+                  required
+                />
+                <p className="text-xs text-muted mt-2">Logonuzun yüklü olduğu tam URL adresini (örn. https://unsplash.com/.../img.png) giriniz.</p>
+              </div>
+              
+              {settingsFormData.logoUrl && (
+                <div className="mt-4 border border-card-border/50 rounded-lg p-4 bg-black/20 flex items-center justify-center">
+                  <div className="h-12 flex items-center">
+                    <img src={settingsFormData.logoUrl} alt="Logo Preview" className="max-h-full object-contain" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Button type="submit" disabled={isSubmitting} variant="primary" className="gap-2">
+              {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
+              Ayarları Kaydet
+            </Button>
+          </form>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 border-r border-card-border pr-8">
           <h2 className="text-xl font-bold mb-6">
@@ -293,6 +387,7 @@ export function AdminPanel() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

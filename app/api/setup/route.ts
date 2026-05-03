@@ -32,6 +32,15 @@ export async function GET() {
       );
     `;
 
+    // Create settings table
+    await sql`
+      CREATE TABLE IF NOT EXISTS settings (
+          key VARCHAR(100) PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     return NextResponse.json({ message: 'Tablolar veritabanında başarıyla oluşturuldu/kontrol edildi.' });
   } catch (error: any) {
     console.error('Setup Error:', error);

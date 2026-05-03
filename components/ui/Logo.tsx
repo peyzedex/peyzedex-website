@@ -1,6 +1,14 @@
 import Link from 'next/link';
 
-export function Logo() {
+export function Logo({ logoUrl }: { logoUrl?: string }) {
+  if (logoUrl) {
+    return (
+      <Link href="/" className="flex items-center gap-2 group">
+        <img src={logoUrl} alt="PeyZeDex Logo" className="h-10 w-auto object-contain" />
+      </Link>
+    );
+  }
+
   return (
     <Link href="/" className="flex items-center gap-2 group">
       <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-card border border-card-border overflow-hidden group-hover:border-primary/50 transition-colors">

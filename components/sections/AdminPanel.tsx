@@ -4,12 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/Button';
 import { Plus, Trash2, LogIn, Loader2, AlertCircle } from 'lucide-react';
-import { auth, db } from '@/lib/firebase';
 import { useProjects } from '@/lib/useProjects';
 import { useDemos } from '@/lib/useDemos';
-import { signOut } from 'firebase/auth'; // kept for future use if needed
-import { collection, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '@/lib/firebase-error';
 
 export function AdminPanel() {
   const [isLocalAdmin, setIsLocalAdmin] = useState(false);
@@ -18,8 +14,8 @@ export function AdminPanel() {
   
   const [activeTab, setActiveTab] = useState<'projects' | 'demos'>('projects');
   
-  const { projects, loading: projectsLoading } = useProjects();
-  const { demos, loading: demosLoading } = useDemos();
+  const { projects, loading: projectsLoading, refetch: refetchProjects } = useProjects();
+  const { demos, loading: demosLoading, refetch: refetchDemos } = useDemos();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -61,14 +57,21 @@ export function AdminPanel() {
         category: formData.category,
         imageUrl: formData.imageUrl,
         linkUrl: formData.linkUrl,
-        createdAt: serverTimestamp()
       };
       
       if (activeTab === 'projects') {
         payload.isFeatured = formData.isFeatured;
       }
 
-      await addDoc(collection(db, activeTab), payload);
+      const res = await fetch(`/api/${activeTab}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) {
+        throw new Error((await res.json())?.error || 'Bir hata oluştu');
+      }
       
       setFormData({
         title: '',
@@ -78,11 +81,11 @@ export function AdminPanel() {
         linkUrl: '',
         isFeatured: true
       });
+      
+      if (activeTab === 'projects') refetchProjects();
+      else refetchDemos();
     } catch (error: any) {
       setErrorMsg('Veritabanına eklenemedi. ' + (error.message || 'Bir hata oluştu'));
-      try {
-        handleFirestoreError(error, OperationType.CREATE, activeTab);
-      } catch(e){}
     } finally {
       setIsSubmitting(false);
     }
@@ -91,10 +94,12 @@ export function AdminPanel() {
   const handleDelete = async (id: string, type: 'projects' | 'demos') => {
     if(!confirm('Emin misiniz?')) return;
     try {
-      await deleteDoc(doc(db, type, id));
+      const res = await fetch(`/api/${type}/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Silinemedi');
+      if (type === 'projects') refetchProjects();
+      else refetchDemos();
     } catch (error: any) {
       setErrorMsg('Silinemedi. ' + error.message);
-      try { handleFirestoreError(error, OperationType.DELETE, `${type}/${id}`); } catch(e){}
     }
   }
 

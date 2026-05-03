@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "project": {
+      "title": "Project",
+      "description": "A portfolio project or reference",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "linkUrl": { "type": "string" },
+        "isFeatured": { "type": "boolean" },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["title", "description", "category", "imageUrl", "linkUrl", "isFeatured", "createdAt"]
+    },
+    "demo": {
+      "title": "Demo",
+      "description": "A template or live demo example",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "linkUrl": { "type": "string" },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["title", "description", "category", "imageUrl", "linkUrl", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": { "$ref": "project" },
+      "description": "Portfolio projects"
+    },
+    "/demos/{demoId}": {
+      "schema": { "$ref": "demo" },
+      "description": "Live templates and demos"
+    }
+  }
+}
